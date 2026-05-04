@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Upload, Trash2, Star, X, ChevronLeft, ChevronRight, ImagePlus, Plus, Package, Ruler } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSizes } from '@/hooks/useProducts';
+import { InlineColorForm } from './InlineColorForm';
 
 interface ColorGalleryManagerProps {
   productId: string;
@@ -607,6 +608,7 @@ export function ColorGalleryManager({ productId, images, variants, productColors
               }
             </SelectContent>
           </Select>
+          <InlineColorForm onColorAdded={onImagesChanged} />
         </div>
         {allColors.filter(c => !displayColors.find(dc => dc.id === c.id)).length === 0 && (
           <p className="text-xs text-muted-foreground">
