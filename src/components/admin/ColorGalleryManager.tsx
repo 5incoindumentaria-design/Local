@@ -10,6 +10,7 @@ import { Upload, Trash2, Star, X, ChevronLeft, ChevronRight, ImagePlus, Plus, Pa
 import { cn } from '@/lib/utils';
 import { useSizes } from '@/hooks/useProducts';
 import { InlineColorForm } from './InlineColorForm';
+import { InlineSizeForm } from './InlineSizeForm';
 
 interface ColorGalleryManagerProps {
   productId: string;
@@ -23,7 +24,7 @@ interface ColorGalleryManagerProps {
 
 export function ColorGalleryManager({ productId, images, variants, productColors, allColors, basePrice, onImagesChanged }: ColorGalleryManagerProps) {
   const { toast } = useToast();
-  const { sizes } = useSizes();
+  const { sizes, refetch: refetchSizes } = useSizes();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
@@ -507,6 +508,7 @@ export function ColorGalleryManager({ productId, images, variants, productColors
                       }
                     </SelectContent>
                   </Select>
+                  <InlineSizeForm onSizeAdded={refetchSizes} />
                 </div>
 
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">

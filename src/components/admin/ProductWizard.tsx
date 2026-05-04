@@ -19,6 +19,7 @@ import { CalendarIcon, Percent, ArrowRight, ArrowLeft, Check, ImagePlus, Trash2 
 import { CategoryTreeSelect } from './CategoryTreeSelect';
 import { CategorySelector } from './CategorySelector';
 import { InlineColorForm } from './InlineColorForm';
+import { InlineSizeForm } from './InlineSizeForm';
 import { StockByColorManager, VariantStock } from './StockByColorManager';
 
 interface ProductWizardProps {
@@ -539,8 +540,13 @@ export function ProductWizard({ open, onClose, onSaved }: ProductWizardProps) {
             </div>
 
             <div>
-              <Label className="text-base font-medium">Talles y Stock por Color</Label>
-              <p className="text-sm text-muted-foreground mb-3">Seleccioná los talles disponibles para cada color y configurá el stock</p>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <Label className="text-base font-medium">Talles y Stock por Color</Label>
+                  <p className="text-sm text-muted-foreground">Seleccioná los talles disponibles para cada color y configurá el stock</p>
+                </div>
+                <InlineSizeForm onSizeAdded={refetchSizes} />
+              </div>
               <StockByColorManager
                 colors={colors}
                 sizes={sizes}
