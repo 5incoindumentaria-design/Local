@@ -1,0 +1,17 @@
+{
+  "name": "5inco Indumentaria",
+  "short_name": "5inco",
+  "description": "Panel de Administración y Tienda de 5inco Indumentaria",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    {
+      "src": "/logo-square.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
