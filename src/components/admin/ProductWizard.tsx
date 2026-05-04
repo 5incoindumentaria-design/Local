@@ -437,15 +437,34 @@ export function ProductWizard({ open, onClose, onSaved }: ProductWizardProps) {
               parentCategoryId={parentCategoryId}
               subcategoryId={subcategoryId}
               onParentChange={(id, catName) => {
-                const oldCat = categories.find(c => c.id === parentCategoryId);
-                // Sugerir nombre si está vacío o si era igual a la categoría anterior
-                if (!name || (oldCat && name === oldCat.name)) {
+                const oldParentCat = categories.find(c => c.id === parentCategoryId);
+                const oldSubCat = categories.find(c => c.id === subcategoryId);
+                const oldSuggestedName = oldSubCat 
+                  ? `${oldParentCat?.name} ${oldSubCat.name}` 
+                  : (oldParentCat?.name || '');
+
+                if (!name || name === oldSuggestedName || name === oldParentCat?.name) {
                   if (catName) setName(catName);
                 }
                 setParentCategoryId(id);
                 setSubcategoryId('');
               }}
-              onSubcategoryChange={setSubcategoryId}
+              onSubcategoryChange={(id, subName) => {
+                const oldParentCat = categories.find(c => c.id === parentCategoryId);
+                const oldSubCat = categories.find(c => c.id === subcategoryId);
+                const oldSuggestedName = oldSubCat 
+                  ? `${oldParentCat?.name} ${oldSubCat.name}` 
+                  : (oldParentCat?.name || '');
+
+                if (!name || name === oldSuggestedName || name === oldParentCat?.name) {
+                  if (subName && oldParentCat) {
+                    setName(`${oldParentCat.name} ${subName}`);
+                  } else if (oldParentCat) {
+                    setName(oldParentCat.name);
+                  }
+                }
+                setSubcategoryId(id);
+              }}
               onCategoriesUpdated={refetchCategories}
             />
 

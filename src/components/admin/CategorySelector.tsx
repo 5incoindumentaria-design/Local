@@ -15,7 +15,7 @@ interface CategorySelectorProps {
   parentCategoryId: string;
   subcategoryId: string;
   onParentChange: (id: string, categoryName?: string) => void;
-  onSubcategoryChange: (id: string) => void;
+  onSubcategoryChange: (id: string, subcategoryName?: string) => void;
   onCategoriesUpdated: () => void;
 }
 
@@ -91,7 +91,7 @@ export function CategorySelector({
       if (asChild) {
         setIsAddingChild(false);
         // Auto-select the new subcategory after a small delay for refetch
-        setTimeout(() => onSubcategoryChange(data.id), 300);
+        setTimeout(() => onSubcategoryChange(data.id, data.name), 300);
       } else {
         setIsAddingParent(false);
         // Auto-select the new parent category
@@ -200,7 +200,14 @@ export function CategorySelector({
             Subcategoría (opcional)
           </Label>
           <div className="space-y-2">
-            <Select value={subcategoryId || 'none'} onValueChange={v => onSubcategoryChange(v === 'none' ? '' : v)}>
+            <Select value={subcategoryId || 'none'} onValueChange={v => {
+              if (v === 'none') {
+                onSubcategoryChange('');
+              } else {
+                const subCat = childCategories.find(c => c.id === v);
+                onSubcategoryChange(v, subCat?.name);
+              }
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Sin subcategoría" />
               </SelectTrigger>
