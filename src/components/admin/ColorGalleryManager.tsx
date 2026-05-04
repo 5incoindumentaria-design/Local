@@ -27,6 +27,7 @@ export function ColorGalleryManager({ productId, images, variants, productColors
   const { sizes, refetch: refetchSizes } = useSizes();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState<{id: string, colorId: string | null, url: string, file: File}[]>([]);
   const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
   const [additionalColors, setAdditionalColors] = useState<Color[]>([]);
   const [isDragging, setIsDragging] = useState<string | null>(null); // colorId or 'general'
@@ -62,27 +63,41 @@ export function ColorGalleryManager({ productId, images, variants, productColors
   const uploadFiles = useCallback(async (files: FileList | File[], colorId: string | null) => {
     if (!files || files.length === 0) return;
 
-    setUploading(true);
-    let uploadedCount = 0;
-
-    for (const file of Array.from(files)) {
+    const validFiles = Array.from(files).filter(file => {
       if (!file.type.startsWith('image/')) {
         toast({ variant: 'destructive', title: 'Solo se permiten imágenes' });
-        continue;
+        return false;
       }
-
       if (file.size > 5 * 1024 * 1024) {
         toast({ variant: 'destructive', title: 'Imagen muy grande (máx 5MB)' });
-        continue;
+        return false;
       }
+      return true;
+    });
 
+    if (validFiles.length === 0) return;
+
+    // Immediately show local previews
+    const newUploadingImages = validFiles.map(file => ({
+      id: Math.random().toString(36).substring(7),
+      colorId,
+      url: URL.createObjectURL(file),
+      file
+    }));
+
+    setUploadingImages(prev => [...prev, ...newUploadingImages]);
+    setUploading(true);
+
+    let uploadedCount = 0;
+
+    for (const item of newUploadingImages) {
       try {
-        const fileExt = file.name.split('.').pop() || 'png';
-        const fileName = `${productId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const fileExt = item.file.name.split('.').pop() || 'png';
+        const fileName = `${productId}/${Date.now()}-${item.id}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from('product-images')
-          .upload(fileName, file);
+          .upload(fileName, item.file);
 
         if (uploadError) throw uploadError;
 
@@ -101,26 +116,32 @@ export function ColorGalleryManager({ productId, images, variants, productColors
         const { error: dbError } = await supabase.from('product_images').insert({
           product_id: productId,
           image_url: publicUrl,
-          display_order: maxOrder + 1,
+          display_order: maxOrder + 1 + uploadedCount,
           color_id: colorId,
-          is_primary: currentImages.length === 0, // First image for this color is primary
+          is_primary: currentImages.length === 0 && uploadedCount === 0, 
         });
 
         if (dbError) throw dbError;
+        
         uploadedCount++;
+        
+        // Remove from uploading array as it's now in DB
+        setUploadingImages(prev => prev.filter(img => img.id !== item.id));
+        // Refresh DB images to show the newly uploaded one
+        onImagesChanged();
       } catch (err) {
         console.error('Upload error:', err);
         toast({ variant: 'destructive', title: 'Error al subir imagen' });
+        setUploadingImages(prev => prev.filter(img => img.id !== item.id));
       }
     }
 
     if (uploadedCount > 0) {
       toast({ title: `${uploadedCount} imagen(es) subida(s)` });
-      onImagesChanged();
     }
 
     setUploading(false);
-  }, [productId, imagesByColor, generalImages, onImagesChanged]);
+  }, [productId, imagesByColor, generalImages, onImagesChanged, toast]);
 
   const handleUpdateStock = async (variantId: string, newStock: number) => {
     const { error } = await supabase
@@ -301,15 +322,16 @@ export function ColorGalleryManager({ productId, images, variants, productColors
 
   const renderImageGrid = (imageList: ProductImage[], colorId: string | null) => {
     const sortedImages = [...imageList].sort((a, b) => a.display_order - b.display_order);
+    const localUploading = uploadingImages.filter(img => img.colorId === colorId);
     
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">
-            {sortedImages.length} imagen(es)
+            {sortedImages.length + localUploading.length} imagen(es)
           </span>
           <div className="flex items-center gap-2">
-            {uploading && <span className="text-[10px] text-accent animate-pulse font-bold">SUBIENDO...</span>}
+            {localUploading.length > 0 && <span className="text-[10px] text-accent animate-pulse font-bold">SUBIENDO...</span>}
             <Button
               size="sm"
               variant="outline"
@@ -325,7 +347,7 @@ export function ColorGalleryManager({ productId, images, variants, productColors
           </div>
         </div>
 
-        {sortedImages.length === 0 ? (
+        {sortedImages.length === 0 && localUploading.length === 0 ? (
           <div 
             className={cn(
               "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
@@ -399,7 +421,7 @@ export function ColorGalleryManager({ productId, images, variants, productColors
                     variant="ghost"
                     className="h-7 w-7 text-white hover:text-white hover:bg-white/20"
                     onClick={() => handleReorder(img, 'down')}
-                    disabled={idx === sortedImages.length - 1}
+                    disabled={idx === sortedImages.length - 1 && localUploading.length === 0}
                     title="Mover después"
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -414,6 +436,22 @@ export function ColorGalleryManager({ productId, images, variants, productColors
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                </div>
+              </div>
+            ))}
+
+            {/* Rendering optimistic local uploading images */}
+            {localUploading.map((img) => (
+              <div key={img.id} className="relative group aspect-square opacity-60">
+                <img
+                  src={img.url}
+                  alt="Subiendo..."
+                  className="w-full h-full object-cover rounded-md grayscale-[30%]"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="bg-black/70 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg animate-pulse">
+                    SUBIENDO...
+                  </span>
                 </div>
               </div>
             ))}
