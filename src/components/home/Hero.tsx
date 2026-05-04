@@ -39,6 +39,8 @@ export function Hero() {
         <img
           src={heroImage}
           alt="5inco Indumentaria - Moda contemporánea"
+          fetchpriority="high"
+          decoding="async"
           className="w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent" />

@@ -77,6 +77,8 @@ export function ProductCard({ product }: ProductCardProps) {
                 transition={{ duration: 0.4, ease: "easeOut" }}
                 src={product.secondaryImageUrl}
                 alt={product.name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover absolute inset-0"
               />
             ) : (
@@ -88,6 +90,8 @@ export function ProductCard({ product }: ProductCardProps) {
                 transition={{ duration: 0.4 }}
                 src={product.displayImageUrl || ''}
                 alt={product.name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             )}
