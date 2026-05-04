@@ -1,22 +1,11 @@
 import { Link } from 'react-router-dom';
-import { User, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
 import { CartButton } from '@/components/cart/CartButton';
 import { ModeToggle } from '@/components/ModeToggle';
 import { Logo } from '@/components/ui/Logo';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ProfileSettings } from '@/components/profile/ProfileSettings';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { Settings, LogOut, Sparkles } from 'lucide-react';
 
 const navLinks = [
   { name: 'Inicio', href: '/' },
@@ -27,8 +16,6 @@ const navLinks = [
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const { user, isAdmin, signOut, activeProfile } = useAuth();
 
   return (
     <motion.header 
@@ -80,62 +67,7 @@ export function Header() {
             <ModeToggle />
             <CartButton />
             
-            {user || isAdmin ? (
-              <div className="flex items-center space-x-3">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 overflow-hidden border border-border/50 hover:border-accent/50 transition-all">
-                      {activeProfile?.avatar_url ? (
-                        <img 
-                          src={activeProfile.avatar_url} 
-                          alt={activeProfile.name} 
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <User className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 mt-2 p-2 border-none bg-background/95 backdrop-blur-xl shadow-2xl">
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-bold leading-none">{activeProfile?.name || 'Usuario'}</p>
-                        <p className="text-xs leading-none text-muted-foreground capitalize">
-                          {activeProfile?.role || 'Visitante'}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-border/50" />
-                    <DropdownMenuItem 
-                      onClick={() => setShowSettings(true)}
-                      className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
-                    >
-                      <Sparkles className="h-4 w-4 text-accent" />
-                      <span>Personalizar Perfil</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-border/50" />
-                    <DropdownMenuItem 
-                      onClick={() => signOut()}
-                      className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive transition-colors"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Cerrar Sesión</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ) : (
-              <Link to="/jefecitos">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground transition-transform hover:scale-110">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
-            )}
 
-            <ProfileSettings 
-              open={showSettings} 
-              onClose={() => setShowSettings(false)} 
-            />
 
             {/* Mobile menu button */}
             <Button
