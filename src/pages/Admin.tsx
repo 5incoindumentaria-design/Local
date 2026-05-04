@@ -89,6 +89,9 @@ export default function Admin() {
   const [showSettings, setShowSettings] = useState(false);
   const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [showActivityHistory, setShowActivityHistory] = useState(false);
+  const [showIAPanel, setShowIAPanel] = useState(false);
+  const [processingIA, setProcessingIA] = useState(false);
+  const [iaProgress, setIAProgress] = useState({ current: 0, total: 0 });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [globalSettings, setGlobalSettings] = useState<{hide_out_of_stock: boolean, low_stock_threshold: number}>({
@@ -169,6 +172,7 @@ export default function Admin() {
     },
     {
       title: 'Administración', section: 'admin', items: [
+        { id: 'ia', label: 'Herramientas IA', icon: Sparkles, action: () => setShowIAPanel(true), highlight: 'bg-accent/10 text-accent border-accent/20' },
         { id: 'nomina', label: 'Nómina', icon: DollarSign, action: () => setShowPayroll(true) },
         { id: 'tienda', label: 'Ajustes Tienda', icon: SettingsIcon, action: () => setShowSettings(true) },
         { id: 'perfiles', label: 'Perfiles', icon: UserIcon, action: () => setShowProfileManager(true), ownerOnly: true },
@@ -433,6 +437,71 @@ export default function Admin() {
         open={showProfileSettings} 
         onClose={() => setShowProfileSettings(false)} 
       />
+
+      <Dialog open={showIAPanel} onOpenChange={setShowIAPanel}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Herramientas IA</DialogTitle>
+            <DialogDescription>Optimizá tu catálogo automáticamente usando Groq Vision.</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <div className="p-4 bg-muted/30 rounded-lg border space-y-3">
+              <h4 className="font-bold text-sm">Autocompletado de Descripciones</h4>
+              <p className="text-xs text-muted-foreground">Analiza las fotos de los productos que no tienen descripción y redacta una profesional junto con un copy para Instagram.</p>
+              
+              {processingIA ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span>Procesando productos...</span>
+                    <span>{iaProgress.current} / {iaProgress.total}</span>
+                  </div>
+                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-accent transition-all duration-300" 
+                      style={{ width: `${(iaProgress.current / iaProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <Button 
+                  className="w-full" 
+                  onClick={async () => {
+                    const toProcess = products.filter(p => !p.description || p.description.length < 10);
+                    if (toProcess.length === 0) {
+                      toast({ title: '¡Todo al día!', description: 'No hay productos sin descripción para procesar.' });
+                      return;
+                    }
+                    
+                    setProcessingIA(true);
+                    setIAProgress({ current: 0, total: toProcess.length });
+                    
+                    let count = 0;
+                    for (const p of toProcess) {
+                      try {
+                        const { error } = await supabase.functions.invoke('generate-product-content-v2', {
+                          body: { productId: p.id }
+                        });
+                        if (error) throw error;
+                        count++;
+                        setIAProgress(prev => ({ ...prev, current: count }));
+                      } catch (err) {
+                        console.error(`Error procesando ${p.name}:`, err);
+                      }
+                    }
+                    
+                    setProcessingIA(false);
+                    toast({ title: 'Proceso terminado', description: `Se actualizaron ${count} productos.` });
+                    refetch();
+                  }}
+                >
+                  Generar {products.filter(p => !p.description || p.description.length < 10).length} faltantes
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Dialog */}
       <AlertDialog open={!!productToDelete} onOpenChange={() => setProductToDelete(null)}>

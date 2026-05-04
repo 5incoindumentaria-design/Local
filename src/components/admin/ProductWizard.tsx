@@ -15,7 +15,7 @@ import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { useCategories } from '@/hooks/useCategories';
 import { useColors, useSizes } from '@/hooks/useProducts';
-import { CalendarIcon, Percent, ArrowRight, ArrowLeft, Check, ImagePlus, Trash2 } from 'lucide-react';
+import { CalendarIcon, Percent, ArrowRight, ArrowLeft, Check, ImagePlus, Trash2, Sparkles, Loader2 } from 'lucide-react';
 import { CategoryTreeSelect } from './CategoryTreeSelect';
 import { CategorySelector } from './CategorySelector';
 import { InlineColorForm } from './InlineColorForm';
@@ -71,6 +71,7 @@ export function ProductWizard({ open, onClose, onSaved }: ProductWizardProps) {
   const [draggedColorId, setDraggedColorId] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -473,9 +474,24 @@ export function ProductWizard({ open, onClose, onSaved }: ProductWizardProps) {
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Remera Básica" />
             </div>
 
-            <div>
-              <Label>Descripción</Label>
-              <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Descripción</Label>
+                {createdProductId && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 gap-1.5 text-accent hover:text-accent hover:bg-accent/10"
+                    onClick={handleGenerateAI}
+                    disabled={generating}
+                  >
+                    {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    <span className="text-xs font-medium">Generar con IA</span>
+                  </Button>
+                )}
+              </div>
+              <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder={createdProductId ? "La IA analizará la foto..." : "Se habilita después de guardar el producto"} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

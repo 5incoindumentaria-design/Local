@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ImageUpload } from './ImageUpload';
 import { CategorySelector } from './CategorySelector';
 import { useCategories } from '@/hooks/useCategories';
-import { CalendarIcon, Percent } from 'lucide-react';
+import { CalendarIcon, Percent, Sparkles, Loader2 } from 'lucide-react';
 
 interface ProductFormProps {
   product?: Product | null;
@@ -44,6 +44,8 @@ export function ProductForm({ product, open, onClose, onSaved }: ProductFormProp
   const [discountEndsAt, setDiscountEndsAt] = useState<Date | undefined>(undefined);
   const [saving, setSaving] = useState(false);
   const [costPriceEdited, setCostPriceEdited] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [instagramCopy, setInstagramCopy] = useState('');
 
   // Reset form when product changes or modal opens
   useEffect(() => {
@@ -85,6 +87,7 @@ export function ProductForm({ product, open, onClose, onSaved }: ProductFormProp
       
       setDiscountPercent(product?.discount_percent?.toString() || '0');
       setDiscountEndsAt(product?.discount_ends_at ? new Date(product.discount_ends_at) : undefined);
+      setInstagramCopy(product?.instagram_copy || '');
     }
   }, [product, open, categories]);
 
@@ -127,6 +130,7 @@ export function ProductForm({ product, open, onClose, onSaved }: ProductFormProp
         is_new: product?.is_new ?? true, // Calculated dynamically based on created_at
         discount_percent: parseInt(discountPercent) || 0,
         discount_ends_at: discountEndsAt ? discountEndsAt.toISOString() : null,
+        instagram_copy: instagramCopy || null,
       };
 
       // Save preferences to localStorage for the next time
@@ -158,6 +162,32 @@ export function ProductForm({ product, open, onClose, onSaved }: ProductFormProp
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGenerateAI = async () => {
+    if (!isEditing) {
+      toast({ variant: 'destructive', title: 'Guardá el producto primero', description: 'Para analizar la imagen, el producto ya debe estar creado.' });
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-product-content-v2', {
+        body: { productId: product.id }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setDescription(data.description);
+      setInstagramCopy(data.instagram_copy);
+      toast({ title: 'Contenido generado con IA ✨' });
+    } catch (err: any) {
+      console.error('Error con IA:', err);
+      toast({ variant: 'destructive', title: 'Error al generar con IA', description: err.message });
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -225,9 +255,36 @@ export function ProductForm({ product, open, onClose, onSaved }: ProductFormProp
             <Input value={name} onChange={e => setName(e.target.value)} required />
           </div>
 
-          <div>
-            <Label>Descripción</Label>
-            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Descripción</Label>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 gap-1.5 text-accent hover:text-accent hover:bg-accent/10"
+                onClick={handleGenerateAI}
+                disabled={generating || !isEditing}
+              >
+                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                <span className="text-xs font-medium">Generar con IA</span>
+              </Button>
+            </div>
+            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="La IA analizará la foto para redactar esto..." />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-muted-foreground flex items-center gap-1.5">
+              Copy para Instagram
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Opcional</span>
+            </Label>
+            <Textarea 
+              value={instagramCopy} 
+              onChange={e => setInstagramCopy(e.target.value)} 
+              rows={4} 
+              className="text-sm bg-muted/20"
+              placeholder="Ideal para copiar y pegar en redes..." 
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
